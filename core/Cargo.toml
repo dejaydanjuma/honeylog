@@ -4,8 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-# cdylib for the Kotlin/Swift FFI bridge, rlib for tests and cloud reuse
-crate-type = ["cdylib", "rlib"]
+# cdylib -> Android (.so), staticlib -> iOS (.a), rlib -> tests
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+uniffi = { version = "0.28", features = ["cli"] }
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"

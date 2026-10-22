@@ -1,8 +1,9 @@
 //! Honeylog core: salience scoring and ranking.
 //!
-//! This crate is the single source of truth for "what deserves to be
-//! remembered." Every platform binds to it so the ranking can't drift
-//! between Android and iOS.
+//! Exposed to Kotlin (Android) and Swift (iOS) via uniffi so the ranking
+//! cannot drift between platforms.
+
+uniffi::setup_scaffolding!("honeylog");
 
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +11,7 @@ use serde::{Deserialize, Serialize};
 pub const GAMMA: f32 = 0.94;
 pub const SECONDS_PER_DAY: f32 = 86_400.0;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
 #[serde(rename_all = "snake_case")]
 pub enum Category {
     Person,
@@ -32,7 +33,7 @@ impl Category {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct Moment {
     pub embedding: Vec<f32>,
     pub timestamp: u64,
@@ -51,6 +52,8 @@ fn cosine(a: &[f32], b: &[f32]) -> f32 {
     dot / denom
 }
 
+// ---- internal, reference-based (used by tests and by the FFI wrappers) ----
+
 pub fn score_moment(query: &[f32], moment: &Moment, now: u64) -> f32 {
     assert_eq!(query.len(), moment.embedding.len(), "dim mismatch");
     let relevance = cosine(query, &moment.embedding);
@@ -59,7 +62,6 @@ pub fn score_moment(query: &[f32], moment: &Moment, now: u64) -> f32 {
     relevance * recency * moment.category.prior()
 }
 
-/// Top-`k` moment indices by score, descending.
 pub fn rank(query: &[f32], moments: &[Moment], now: u64, k: usize) -> Vec<usize> {
     let mut scored: Vec<(usize, f32)> = moments
         .iter()
@@ -69,6 +71,23 @@ pub fn rank(query: &[f32], moments: &[Moment], now: u64, k: usize) -> Vec<usize>
     scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     scored.into_iter().take(k).map(|(i, _)| i).collect()
 }
+
+// ---- FFI surface (owned types; usize is not FFI-safe) ----
+
+#[uniffi::export(name = "score_moment")]
+pub fn score_moment_ffi(query: Vec<f32>, moment: Moment, now: u64) -> f32 {
+    score_moment(&query, &moment, now)
+}
+
+#[uniffi::export(name = "rank")]
+pub fn rank_ffi(query: Vec<f32>, moments: Vec<Moment>, now: u64, k: u32) -> Vec<u32> {
+    rank(&query, &moments, now, k as usize)
+        .into_iter()
+        .map(|i| i as u32)
+        .collect()
+}
+
+// ---- tests (unchanged) ----
 
 #[cfg(test)]
 mod tests {
@@ -80,11 +99,7 @@ mod tests {
     }
 
     fn m(emb: Vec<f32>, ts: u64, cat: Category) -> Moment {
-        Moment {
-            embedding: emb,
-            timestamp: ts,
-            category: cat,
-        }
+        Moment { embedding: emb, timestamp: ts, category: cat }
     }
 
     #[test]
@@ -131,9 +146,9 @@ mod tests {
         let q = unit(&[1.0, 0.0]);
         let now = 1000;
         let moments = vec![
-            m(unit(&[0.0, 1.0]), now, Category::Ambient), // orthogonal -> 0.0
-            m(unit(&[1.0, 0.0]), now, Category::Ambient), // exact -> 0.60
-            m(unit(&[0.7, 0.7]), now, Category::Person),  // partial + prior -> ~0.96
+            m(unit(&[0.0, 1.0]), now, Category::Ambient),
+            m(unit(&[1.0, 0.0]), now, Category::Ambient),
+            m(unit(&[0.7, 0.7]), now, Category::Person),
         ];
         assert_eq!(rank(&q, &moments, now, 2), vec![2, 1]);
     }
