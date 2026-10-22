@@ -1,0 +1,25 @@
+# Rust
+core/target/
+
+# Android
+android/.gradle/
+android/**/build/
+android/local.properties
+
+# iOS
+ios/Pods/
+ios/**/DerivedData/
+ios/*.xcworkspace/xcuserdata/
+
+# Python
+__pycache__/
+*.pyc
+cloud/.venv/
+
+# Node
+dashboard/node_modules/
+dashboard/dist/
+
+# Env / secrets
+.env
+.env.*
