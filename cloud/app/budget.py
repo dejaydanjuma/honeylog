@@ -35,6 +35,11 @@ class BudgetLedger:
     clock: Callable[[], float] = time.time
     _entries: list[_Entry] = field(default_factory=list)
 
+    def active_entries(self, now: float | None = None) -> list[_Entry]:
+        now = self.clock() if now is None else now
+        self._prune(now)
+        return list(self._entries)
+
     def _prune(self, now: float) -> None:
         cutoff = now - self.window
         self._entries = [e for e in self._entries if e.ts > cutoff]

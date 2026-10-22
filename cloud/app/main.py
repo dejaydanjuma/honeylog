@@ -1,11 +1,16 @@
 """FastAPI surface for the Honeylog sync path.
 
 Two endpoints:
-  POST /sync    accept a salience histogram, charge epsilon, return noisy counts
-  GET  /ledger  current spend for a user (what the dashboard renders)
+  POST /sync          accept a salience histogram, charge epsilon, return noisy counts
+  GET  /ledger/{id}   current spend for a user (what the dashboard renders)
+
+Storage is selected at startup: an explicit `store` argument wins, then the
+HONEYLOG_TABLE environment variable (DynamoDB, used in Lambda), then an
+in-memory store (local dev and tests).
 """
 from __future__ import annotations
 
+import os
 import random
 import time
 from typing import Callable
@@ -15,7 +20,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .budget import BudgetExceeded, BudgetLedger
 from .dp import add_noise
-from .store import InMemoryStore, LedgerStore
+from .store import DynamoStore, InMemoryStore, LedgerStore
 
 # Must match Category in core/src/lib.rs
 ALLOWED_BUCKETS = {"person", "commitment", "location", "object", "ambient"}
@@ -55,7 +60,13 @@ def create_app(
     rng_factory: Callable[[], random.Random] = random.Random,
 ) -> FastAPI:
     app = FastAPI(title="honeylog-sync", version="0.1.0")
-    ledger_store = store or InMemoryStore(clock=clock)
+
+    if store is not None:
+        ledger_store: LedgerStore = store
+    elif os.environ.get("HONEYLOG_TABLE"):
+        ledger_store = DynamoStore(os.environ["HONEYLOG_TABLE"], clock=clock)
+    else:
+        ledger_store = InMemoryStore(clock=clock)
 
     @app.post("/sync", response_model=SyncResponse)
     def sync(req: SyncRequest) -> SyncResponse:
@@ -71,6 +82,7 @@ def create_app(
                     "available": e.available,
                 },
             )
+        ledger_store.persist(req.user_id, ledger)
         noisy = add_noise(req.histogram, req.epsilon, rng=rng_factory())
         return SyncResponse(noisy_histogram=noisy, budget=BudgetView(**ledger.snapshot()))
 
