@@ -19,4 +19,3 @@ Bee audio -> VAD -> Whisper-tiny -> moment extraction
           -> on-device embedding -> salience score
           -> SQLite + sqlite-vec (local)
           -> optional sync: salience buckets only -> AWS
-> All commands above assume you are at the repository root (`honeylog/honeylog`).
