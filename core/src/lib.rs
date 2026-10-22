@@ -80,7 +80,11 @@ mod tests {
     }
 
     fn m(emb: Vec<f32>, ts: u64, cat: Category) -> Moment {
-        Moment { embedding: emb, timestamp: ts, category: cat }
+        Moment {
+            embedding: emb,
+            timestamp: ts,
+            category: cat,
+        }
     }
 
     #[test]
@@ -127,9 +131,9 @@ mod tests {
         let q = unit(&[1.0, 0.0]);
         let now = 1000;
         let moments = vec![
-            m(unit(&[0.0, 1.0]), now, Category::Ambient),  // orthogonal -> 0.0
-            m(unit(&[1.0, 0.0]), now, Category::Ambient),  // exact -> 0.60
-            m(unit(&[0.7, 0.7]), now, Category::Person),   // partial + prior -> ~0.96
+            m(unit(&[0.0, 1.0]), now, Category::Ambient), // orthogonal -> 0.0
+            m(unit(&[1.0, 0.0]), now, Category::Ambient), // exact -> 0.60
+            m(unit(&[0.7, 0.7]), now, Category::Person),  // partial + prior -> ~0.96
         ];
         assert_eq!(rank(&q, &moments, now, 2), vec![2, 1]);
     }
