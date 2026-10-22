@@ -58,9 +58,11 @@ honeylog/
 ├── android/       Kotlin scaffold + generated uniffi bindings
 ├── ios/           Swift scaffold + generated uniffi bindings
 ├── cloud/         FastAPI sync endpoint + epsilon ledger  <- tested, CI-enforced
-├── dashboard/     React scaffold (not yet built)
+├── dashboard/     React privacy ledger — visualizes ε spend live
 ├── models/        whisper-tiny / int8 artifacts (Git LFS)
-└── .github/       CI: fmt + clippy + cargo test, pytest
+├── .github/       CI: fmt + clippy + cargo test, pytest
+| Dashboard privacy ledger (`dashboard/`) | visualizes ε spend, refuses over-budget syncs |
+
 ```
 
 ### What's implemented
