@@ -25,3 +25,4 @@ dashboard/dist/
 .env.*
 cloud/.aws-sam/
 *.zip
+<PATH>/
