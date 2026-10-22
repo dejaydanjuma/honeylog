@@ -26,3 +26,5 @@ dashboard/dist/
 cloud/.aws-sam/
 *.zip
 <PATH>/
+cloud/aws/
+cloud/awscliv2.zip
