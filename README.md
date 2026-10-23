@@ -5,6 +5,7 @@
 [![ci](https://github.com/dejaydanjuma/honeylog/actions/workflows/ci.yml/badge.svg)](https://github.com/dejaydanjuma/honeylog/actions/workflows/ci.yml)
 
 ![Honeylog privacy ledger](docs/ledger.png)
+![Over-budget sync refused](docs/ledger-refused.png)
 
 ---
 
